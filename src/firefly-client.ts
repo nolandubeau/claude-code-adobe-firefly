@@ -1,9 +1,88 @@
 /**
  * Adobe Firefly API Client
  *
- * This client handles authentication and API calls to Adobe Firefly Services.
+ * This client handles authentication and API calls to Adobe Firefly Services
+ * with comprehensive error handling, retry logic, and input validation.
+ *
  * Reference: https://developer.adobe.com/firefly-services/docs/
  */
+
+/**
+ * Error codes for categorizing Firefly API errors.
+ */
+export enum FireflyErrorCode {
+  AUTH_FAILED = "auth_failed",
+  INVALID_CREDENTIALS = "invalid_credentials",
+  TOKEN_EXPIRED = "token_expired",
+  RATE_LIMITED = "rate_limited",
+  INVALID_REQUEST = "invalid_request",
+  INVALID_IMAGE = "invalid_image",
+  IMAGE_TOO_LARGE = "image_too_large",
+  CONTENT_POLICY = "content_policy",
+  SERVER_ERROR = "server_error",
+  NETWORK_ERROR = "network_error",
+  TIMEOUT = "timeout",
+  VALIDATION_ERROR = "validation_error",
+  UNKNOWN = "unknown",
+}
+
+/**
+ * Custom error class for Firefly API errors.
+ */
+export class FireflyError extends Error {
+  constructor(
+    message: string,
+    public code: FireflyErrorCode,
+    public statusCode?: number,
+    public responseBody?: string,
+    public retryable: boolean = false
+  ) {
+    super(message);
+    this.name = "FireflyError";
+  }
+
+  /**
+   * Create an appropriate error from an HTTP response.
+   */
+  static fromResponse(statusCode: number, responseBody: string): FireflyError {
+    let code = FireflyErrorCode.UNKNOWN;
+    let retryable = false;
+    let message = `API request failed: ${statusCode}`;
+
+    switch (statusCode) {
+      case 400:
+        code = FireflyErrorCode.INVALID_REQUEST;
+        message = "Invalid request parameters";
+        break;
+      case 401:
+        code = FireflyErrorCode.TOKEN_EXPIRED;
+        message = "Authentication token expired";
+        retryable = true;
+        break;
+      case 403:
+        code = FireflyErrorCode.CONTENT_POLICY;
+        message = "Request blocked by content policy";
+        break;
+      case 413:
+        code = FireflyErrorCode.IMAGE_TOO_LARGE;
+        message = "Image exceeds maximum size";
+        break;
+      case 429:
+        code = FireflyErrorCode.RATE_LIMITED;
+        message = "Rate limit exceeded";
+        retryable = true;
+        break;
+      default:
+        if (statusCode >= 500) {
+          code = FireflyErrorCode.SERVER_ERROR;
+          message = "Adobe Firefly server error";
+          retryable = true;
+        }
+    }
+
+    return new FireflyError(message, code, statusCode, responseBody, retryable);
+  }
+}
 
 interface TokenResponse {
   access_token: string;
@@ -76,19 +155,32 @@ export class FireflyClient {
   private clientSecret: string;
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
+  private maxRetries: number;
 
   private static readonly AUTH_URL = "https://ims-na1.adobelogin.com/ims/token/v3";
   private static readonly API_BASE = "https://firefly-api.adobe.io";
   private static readonly SCOPES = "openid,AdobeID,firefly_api,ff_apis";
+  private static readonly RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
 
-  constructor(clientId: string, clientSecret: string) {
+  constructor(clientId: string, clientSecret: string, maxRetries: number = 3) {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
+    this.maxRetries = maxRetries;
   }
 
-  private async authenticate(): Promise<string> {
-    // Return cached token if still valid
-    if (this.accessToken && Date.now() < this.tokenExpiry - 60000) {
+  /**
+   * Sleep for a specified number of milliseconds.
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Authenticate with Adobe IMS and get an access token.
+   */
+  private async authenticate(forceRefresh: boolean = false): Promise<string> {
+    // Return cached token if still valid (with 60s buffer)
+    if (!forceRefresh && this.accessToken && Date.now() < this.tokenExpiry - 60000) {
       return this.accessToken;
     }
 
@@ -99,17 +191,38 @@ export class FireflyClient {
       scope: FireflyClient.SCOPES,
     });
 
-    const response = await fetch(FireflyClient.AUTH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
+    let response: Response;
+    try {
+      response = await fetch(FireflyClient.AUTH_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+    } catch (error) {
+      throw new FireflyError(
+        `Network error during authentication: ${error}`,
+        FireflyErrorCode.NETWORK_ERROR
+      );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Authentication failed: ${response.status} - ${errorText}`);
+      if (response.status === 401) {
+        throw new FireflyError(
+          "Invalid client credentials",
+          FireflyErrorCode.INVALID_CREDENTIALS,
+          response.status,
+          errorText
+        );
+      }
+      throw new FireflyError(
+        `Authentication failed: ${response.status} - ${errorText}`,
+        FireflyErrorCode.AUTH_FAILED,
+        response.status,
+        errorText
+      );
     }
 
     const data = (await response.json()) as TokenResponse;
@@ -119,28 +232,83 @@ export class FireflyClient {
     return this.accessToken;
   }
 
+  /**
+   * Make an authenticated API request with retry logic.
+   */
   private async makeRequest<T>(
     endpoint: string,
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
+    retryCount: number = 0
   ): Promise<T> {
     const token = await this.authenticate();
 
-    const response = await fetch(`${FireflyClient.API_BASE}${endpoint}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "x-api-key": this.clientId,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${FireflyClient.API_BASE}${endpoint}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-api-key": this.clientId,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      // Network error - retry if possible
+      if (retryCount < this.maxRetries) {
+        const delay = FireflyClient.RETRY_DELAYS[Math.min(retryCount, FireflyClient.RETRY_DELAYS.length - 1)];
+        console.error(`Network error, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`);
+        await this.sleep(delay);
+        return this.makeRequest<T>(endpoint, body, retryCount + 1);
+      }
+      throw new FireflyError(
+        `Network error: ${error}`,
+        FireflyErrorCode.NETWORK_ERROR,
+        undefined,
+        undefined,
+        true
+      );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      const error = FireflyError.fromResponse(response.status, errorText);
+
+      // Handle token expiry with re-auth
+      if (error.code === FireflyErrorCode.TOKEN_EXPIRED && retryCount === 0) {
+        console.error("Token expired, refreshing and retrying...");
+        await this.authenticate(true);
+        return this.makeRequest<T>(endpoint, body, retryCount + 1);
+      }
+
+      // Retry on retryable errors
+      if (error.retryable && retryCount < this.maxRetries) {
+        const delay = FireflyClient.RETRY_DELAYS[Math.min(retryCount, FireflyClient.RETRY_DELAYS.length - 1)];
+        console.error(`Retryable error (${error.code}), waiting ${delay}ms before retry (${retryCount + 1}/${this.maxRetries})...`);
+        await this.sleep(delay);
+        return this.makeRequest<T>(endpoint, body, retryCount + 1);
+      }
+
+      throw error;
     }
 
     return response.json() as Promise<T>;
+  }
+
+  /**
+   * Validate that at least one image source is provided.
+   */
+  private validateImageSource(
+    imageUrl?: string,
+    imageBase64?: string,
+    fieldName: string = "image"
+  ): void {
+    if (!imageUrl && !imageBase64) {
+      throw new FireflyError(
+        `Either ${fieldName}Url or ${fieldName}Base64 must be provided`,
+        FireflyErrorCode.VALIDATION_ERROR
+      );
+    }
   }
 
   /**
