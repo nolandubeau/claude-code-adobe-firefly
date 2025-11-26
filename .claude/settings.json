@@ -1,0 +1,15 @@
+{
+  "plugins": [
+    ".claude-plugins/ralph-wiggum"
+  ],
+  "mcpServers": {
+    "adobe-firefly": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "FIREFLY_CLIENT_ID": "${FIREFLY_CLIENT_ID}",
+        "FIREFLY_CLIENT_SECRET": "${FIREFLY_CLIENT_SECRET}"
+      }
+    }
+  }
+}
