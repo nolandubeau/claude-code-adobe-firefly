@@ -140,6 +140,16 @@ vite.config.ts.timestamp-*
 
 # Cloned reference repositories
 agent-sandboxes/
+reference/
+
+# AI documentation cache
+ai_docs/
+
+# macOS
+.DS_Store
+
+# Coverage files
+.coverage
 
 # Python
 __pycache__/
