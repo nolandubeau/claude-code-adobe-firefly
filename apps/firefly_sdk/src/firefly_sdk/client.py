@@ -356,11 +356,16 @@ class FireflyClient:
         body: dict[str, Any] = {
             "prompt": request.prompt,
             "n": request.num_variations,
-            "size": {
+        }
+
+        # Use aspect_ratio if provided, otherwise use width/height
+        if request.aspect_ratio:
+            body["aspectRatio"] = request.aspect_ratio
+        else:
+            body["size"] = {
                 "width": request.width,
                 "height": request.height,
-            },
-        }
+            }
 
         if request.negative_prompt:
             body["negativePrompt"] = request.negative_prompt
@@ -368,8 +373,23 @@ class FireflyClient:
         if request.content_class:
             body["contentClass"] = request.content_class
 
-        if request.style:
+        if request.seed is not None:
+            body["seed"] = request.seed
+
+        if request.output_format:
+            body["outputFormat"] = request.output_format
+
+        if request.prompt_biasing_locale_code:
+            body["promptBiasingLocaleCode"] = request.prompt_biasing_locale_code
+
+        # Handle style - can be simple preset string or complex style_options dict
+        if request.style_options:
+            body["style"] = request.style_options
+        elif request.style:
             body["style"] = {"presets": [request.style]}
+
+        if request.structure:
+            body["structure"] = request.structure
 
         result = await self._request("/v3/images/generate", body)
 

@@ -4,12 +4,15 @@ A comprehensive Python SDK for Adobe Firefly API, designed for use with Claude C
 
 ## Features
 
-- Full Adobe Firefly API coverage
+- Full Adobe Firefly API coverage with all parameters (seed, aspect_ratio, style, structure, etc.)
 - Async/await support with httpx
 - Pydantic models for type safety
-- CLI for quick operations
+- **Typer CLI** with rich output formatting
+- **Mock mode** for testing without API credentials (`--use-mocks`)
+- **Image download** and terminal display (`--download`, `--show-images`)
 - Claude Agent SDK integration
 - UV-compatible for easy script execution
+- **126 tests** with comprehensive coverage
 
 ## Installation
 
@@ -69,19 +72,56 @@ asyncio.run(main())
 
 ### CLI
 
+The CLI uses [Typer](https://typer.tiangolo.com/) for a rich command-line experience.
+
 ```bash
 # Generate an image
 firefly generate "A beautiful sunset over mountains" --width 1920 --height 1080
 
+# Generate with all options
+firefly generate "A cat coding" \
+  --style photo \
+  --aspect-ratio 16:9 \
+  --seed 12345 \
+  --variations 2 \
+  --negative "no text, no watermark" \
+  --download \
+  --show-images \
+  --verbose
+
+# Test without API credentials (mock mode)
+firefly generate "Test prompt" --use-mocks
+
 # Remove background
 firefly remove-bg https://example.com/image.jpg
 
+# Expand an image
+firefly expand https://example.com/image.jpg "extend the sky" --width 2048 --height 1024
+
 # Generate similar images
-firefly similar https://example.com/reference.jpg --variations 4
+firefly similar https://example.com/reference.jpg --variations 4 --similarity 0.8
 
 # Apply style transfer
 firefly style https://example.com/style.jpg "A modern city street" --strength 0.8
+
+# Get JSON output
+firefly generate "A sunset" --use-mocks --format json
 ```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--use-mocks` | Use mock API responses (no credentials needed) |
+| `--download` | Download generated images to current directory |
+| `--show-images` | Display images in terminal (requires imgcat) |
+| `--verbose` | Show detailed operation information |
+| `--format` | Output format: `text` (default) or `json` |
+| `--style` | Content class: `photo` or `art` |
+| `--aspect-ratio` | Aspect ratio: `1:1`, `16:9`, `4:3`, etc. |
+| `--seed` | Seed for deterministic output |
+| `--variations` | Number of images to generate (1-4) |
+| `--negative` | Negative prompt (what to avoid) |
 
 ### UV Script Execution
 
@@ -128,6 +168,36 @@ async def setup_agent():
 - `RemoveBackgroundRequest` - Background removal parameters
 - `GenerateSimilarRequest` - Similar image parameters
 - `StyleTransferRequest` - Style transfer parameters
+
+## Testing
+
+The SDK includes comprehensive tests with mock infrastructure:
+
+```bash
+cd apps/firefly_sdk
+
+# Run all tests
+uv run pytest
+
+# Run with coverage
+uv run pytest --cov=firefly_sdk --cov-report=term-missing
+
+# Run specific test file
+uv run pytest tests/test_cli.py -v
+```
+
+### Mock Mode
+
+The `--use-mocks` flag enables testing without API credentials:
+
+```bash
+# Test CLI commands without real API calls
+firefly generate "test" --use-mocks
+firefly expand https://example.com/img.jpg "prompt" --use-mocks
+firefly remove-bg https://example.com/img.jpg --use-mocks
+firefly similar https://example.com/img.jpg --use-mocks
+firefly style https://example.com/style.jpg "prompt" --use-mocks
+```
 
 ## License
 

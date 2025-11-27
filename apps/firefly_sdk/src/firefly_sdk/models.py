@@ -2,7 +2,7 @@
 Pydantic models for Adobe Firefly API requests and responses.
 """
 
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -39,6 +39,12 @@ class GenerateImageRequest(BaseModel):
     num_variations: int = Field(default=1, ge=1, le=4)
     content_class: Optional[Literal["photo", "art"]] = None
     style: Optional[str] = None
+    seed: Optional[int] = Field(default=None, description="Seed for deterministic output")
+    aspect_ratio: Optional[str] = Field(default=None, description="Aspect ratio e.g. '1:1', '16:9', '4:3'")
+    output_format: Optional[Literal["jpeg", "png"]] = Field(default=None, description="Output format")
+    prompt_biasing_locale_code: Optional[str] = Field(default=None, description="Locale code e.g. 'en-US'")
+    style_options: Optional[dict[str, Any]] = Field(default=None, description="Complex style object with presets, imageReference, strength")
+    structure: Optional[dict[str, Any]] = Field(default=None, description="Structure reference object")
 
 
 class GenerateImageResponse(BaseModel):
