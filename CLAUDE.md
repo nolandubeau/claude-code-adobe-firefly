@@ -126,12 +126,23 @@ uv run obox <repo-url> --branch <branch> --model opus --prompt "task" --forks 3
 
 See `docs/examples/` for detailed integration patterns:
 
+### Basic Examples
+
 | Example | Description |
 |---------|-------------|
 | `01-saas-landing-page.md` | SaaS page with AI-generated hero imagery |
 | `02-product-showcase.md` | E-commerce with product photography pipeline |
 | `03-creative-portfolio.md` | Agency portfolio with layered visuals |
 | `04-dashboard-app.md` | Dashboard with custom illustrations |
+
+### Scaled Workflows (E2B Sandboxes)
+
+| Example | Description | Scale |
+|---------|-------------|-------|
+| `05-parallel-design-exploration.md` | Explore design directions in parallel | 4+ forks |
+| `06-ab-landing-page-scale.md` | Generate A/B variants simultaneously | 8 forks |
+| `07-brand-identity-exploration.md` | Create complete brand systems | 5 forks |
+| `08-product-photography-pipeline.md` | Process product catalogs at scale | 10+ forks |
 
 ### Example Workflows
 

@@ -6,12 +6,35 @@ This documentation covers the UX Designer skills and their integration with Adob
 
 See the `examples/` folder for complete integration patterns:
 
+### Basic Integrations
+
 | Example | Description | Skills Used |
 |---------|-------------|-------------|
 | [01-saas-landing-page.md](examples/01-saas-landing-page.md) | SaaS landing page with AI-generated hero imagery | bencium-innovative-ux-designer + Firefly |
 | [02-product-showcase.md](examples/02-product-showcase.md) | E-commerce product page with product photography pipeline | bencium-controlled-ux-designer + Firefly |
 | [03-creative-portfolio.md](examples/03-creative-portfolio.md) | Bold agency portfolio with layered visual assets | bencium-innovative-ux-designer + Firefly |
 | [04-dashboard-app.md](examples/04-dashboard-app.md) | Analytics dashboard with custom illustrations | bencium-controlled-ux-designer + Firefly |
+
+### Scaled Workflows (E2B Sandboxes)
+
+These examples combine the parallel execution power of E2B sandboxes with Bencium design skills and Firefly image generation:
+
+| Example | Description | Capabilities |
+|---------|-------------|--------------|
+| [05-parallel-design-exploration.md](examples/05-parallel-design-exploration.md) | Explore 4+ design directions simultaneously | 4 forks × different design philosophies |
+| [06-ab-landing-page-scale.md](examples/06-ab-landing-page-scale.md) | Generate 8 A/B test variants in parallel | 8 forks × style/color/layout matrix |
+| [07-brand-identity-exploration.md](examples/07-brand-identity-exploration.md) | Create 5 complete brand systems simultaneously | 5 forks × full brand books with assets |
+| [08-product-photography-pipeline.md](examples/08-product-photography-pipeline.md) | Process 500 products with background generation | 10 forks × 50 products each |
+
+### Why Parallel Sandboxes?
+
+| Traditional | Parallel Sandboxes |
+|-------------|-------------------|
+| 1 design at a time | 4-10 designs simultaneously |
+| Sequential iteration | Explore all options at once |
+| Hours per variant | Minutes per variant |
+| Designer bottleneck | AI-assisted scaling |
+| Limited exploration | Comprehensive coverage |
 
 ---
 

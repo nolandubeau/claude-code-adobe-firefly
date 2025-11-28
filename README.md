@@ -311,12 +311,23 @@ Use the bencium-innovative-ux-designer skill for this landing page
 
 The `docs/examples/` directory contains detailed integration patterns combining Firefly image generation with Bencium UX design skills:
 
+### Basic Integrations
+
 | Example | Description |
 |---------|-------------|
 | [01-saas-landing-page.md](docs/examples/01-saas-landing-page.md) | SaaS landing page with AI-generated hero imagery |
 | [02-product-showcase.md](docs/examples/02-product-showcase.md) | E-commerce with product photography pipeline |
 | [03-creative-portfolio.md](docs/examples/03-creative-portfolio.md) | Agency portfolio with layered visuals |
 | [04-dashboard-app.md](docs/examples/04-dashboard-app.md) | Dashboard with custom AI illustrations |
+
+### Scaled Workflows (E2B Sandboxes + Firefly + Bencium)
+
+| Example | Description | Scale |
+|---------|-------------|-------|
+| [05-parallel-design-exploration.md](docs/examples/05-parallel-design-exploration.md) | Explore multiple design directions simultaneously | 4+ forks |
+| [06-ab-landing-page-scale.md](docs/examples/06-ab-landing-page-scale.md) | Generate A/B test variants in parallel | 8 forks |
+| [07-brand-identity-exploration.md](docs/examples/07-brand-identity-exploration.md) | Create complete brand systems simultaneously | 5 forks |
+| [08-product-photography-pipeline.md](docs/examples/08-product-photography-pipeline.md) | Process product catalogs with background generation | 10+ forks |
 
 ### Example Workflows
 
@@ -334,6 +345,11 @@ The `docs/examples/` directory contains detailed integration patterns combining 
 - Design campaign layouts with bencium skills
 - Generate on-brand imagery with Firefly style transfer
 - Create size variations for social, web, and print
+
+**4. Parallel Design Brainstorming (NEW)**
+- Launch 4-10 sandbox forks with different design directions
+- Each fork uses Bencium skills + Firefly for complete designs
+- Compare all results side-by-side in hours instead of weeks
 
 ---
 
