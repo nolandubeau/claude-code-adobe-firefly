@@ -26,6 +26,23 @@ These examples combine the parallel execution power of E2B sandboxes with Benciu
 | [07-brand-identity-exploration.md](examples/07-brand-identity-exploration.md) | Create 5 complete brand systems simultaneously | 5 forks × full brand books with assets |
 | [08-product-photography-pipeline.md](examples/08-product-photography-pipeline.md) | Process 500 products with background generation | 10 forks × 50 products each |
 
+### Adobe MAX 2025 + Brand Integration Examples
+
+These examples demonstrate how to leverage Adobe's brand foundation, MAX 2025 announcements, and E2B scaling for enterprise-grade content production:
+
+| Example | Description | Scale |
+|---------|-------------|-------|
+| [09-adobe-max-announcement-campaign.md](examples/09-adobe-max-announcement-campaign.md) | Post-MAX communication amplification across 20+ channels | 20 forks × multi-platform content |
+| [10-adobe-brand-asset-factory.md](examples/10-adobe-brand-asset-factory.md) | Automated brand-compliant asset generation for 8 products | 48 forks × product × asset type |
+| [11-firefly-model-5-showcase.md](examples/11-firefly-model-5-showcase.md) | Systematic capability demonstration across verticals | 15 forks × capability × market |
+| [12-adobe-customer-content-engine.md](examples/12-adobe-customer-content-engine.md) | Personalized content for 5 customer segments | 20+ forks × segment × content type |
+
+**Key Integrations:**
+- **Adobe Brand Tokens**: Colors (#FA0F00), typography (Adobe Clean), voice guidelines
+- **Firefly Image Model 5**: Native 4MP, photorealistic, commercially safe
+- **MAX 2025 Features**: AI Assistant, Creative Production, Custom Models, Partner Models
+- **E2B Scaling**: Regional localization, A/B variants, segment personalization
+
 ### Why Parallel Sandboxes?
 
 | Traditional | Parallel Sandboxes |

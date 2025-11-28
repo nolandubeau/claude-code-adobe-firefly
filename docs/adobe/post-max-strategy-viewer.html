@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adobe Post-MAX Strategy Visualizations</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Adobe Clean', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FA0F00 0%, #FF6B00 100%);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #252525;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+        }
+
+        .sidebar h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        .diagram-list {
+            list-style: none;
+        }
+
+        .diagram-list li {
+            margin-bottom: 8px;
+        }
+
+        .diagram-list button {
+            width: 100%;
+            padding: 12px 16px;
+            background: #333;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .diagram-list button:hover {
+            background: #444;
+        }
+
+        .diagram-list button.active {
+            background: linear-gradient(135deg, #FA0F00 0%, #FF6B00 100%);
+        }
+
+        .diagram-list button .type {
+            font-size: 11px;
+            opacity: 0.7;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .diagram-info {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 12px;
+            padding: 16px 20px;
+            z-index: 10;
+            max-width: 500px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .diagram-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .diagram-info p {
+            font-size: 13px;
+            color: #aaa;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .diagram-info .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #FA0F00 0%, #FF6B00 100%);
+            color: #fff;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #2a2a2a;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: #333;
+            border-bottom: 1px solid #444;
+        }
+
+        .toolbar button {
+            padding: 8px 16px;
+            background: #444;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+
+        .toolbar button:hover {
+            background: #555;
+        }
+
+        .toolbar button:active {
+            transform: scale(0.98);
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .zoom-controls button {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .zoom-level {
+            min-width: 60px;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .diagram-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: #f5f5f5;
+        }
+
+        .diagram-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .diagram-wrapper.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diagram-wrapper .mermaid {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+        }
+
+        .diagram-wrapper svg {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #888;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Adobe Post-MAX Strategy Visualizations</h1>
+            <div class="subtitle">Interactive diagrams for agentic engineering workflows</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2>Diagrams</h2>
+            <ul class="diagram-list">
+                <li><button data-diagram="diagram1" class="active">48-Hour Post-Keynote Campaign<span class="type">Flowchart</span></button></li>
+                <li><button data-diagram="diagram2">Brand Asset Factory Pipeline<span class="type">Flowchart</span></button></li>
+                <li><button data-diagram="diagram3">Annual Asset Production<span class="type">Pie Chart</span></button></li>
+                <li><button data-diagram="diagram4">Customer Segment Engine<span class="type">Flowchart</span></button></li>
+                <li><button data-diagram="diagram5">Regional Localization<span class="type">Gantt Chart</span></button></li>
+                <li><button data-diagram="diagram6">E2B Sandbox Architecture<span class="type">Flowchart</span></button></li>
+                <li><button data-diagram="diagram7">MAX 2025 Content Matrix<span class="type">Flowchart</span></button></li>
+                <li><button data-diagram="diagram8">ROI Comparison<span class="type">XY Chart</span></button></li>
+                <li><button data-diagram="diagram9">Firefly + Bencium Integration<span class="type">Sequence</span></button></li>
+                <li><button data-diagram="diagram10">Post-MAX Timeline<span class="type">Timeline</span></button></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="toolbar">
+                <button onclick="resetZoom()">Reset View</button>
+                <button onclick="fitToScreen()">Fit to Screen</button>
+                <div class="zoom-controls">
+                    <button onclick="zoomOut()">-</button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button onclick="zoomIn()">+</button>
+                </div>
+            </div>
+
+            <div class="diagram-container">
+                <div class="diagram-wrapper active" id="diagram1">
+                    <div class="diagram-info">
+                        <span class="badge">Flowchart</span>
+                        <h3>48-Hour Post-Keynote Campaign Flow</h3>
+                        <p>Orchestration timeline showing how 20 E2B sandbox forks execute parallel content generation across social media, email, web, and regional channels within 48 hours of a MAX keynote.</p>
+                    </div>
+                    <div class="mermaid">
+flowchart TB
+    subgraph KEYNOTE["🎤 MAX 2025 KEYNOTE"]
+        K1[Firefly Image Model 5]
+        K2[AI Assistant in Photoshop]
+        K3[Creative Production]
+        K4[Partner Model Integration]
+    end
+
+    subgraph HOUR0["⏱️ HOUR 0-2: Content Orchestration"]
+        O1[("Campaign<br/>Orchestrator")]
+        O1 --> |spawn| F1[Fork Group A<br/>Social Media]
+        O1 --> |spawn| F2[Fork Group B<br/>Email Marketing]
+        O1 --> |spawn| F3[Fork Group C<br/>Web Content]
+        O1 --> |spawn| F4[Fork Group D<br/>Regional]
+    end
+
+    subgraph HOUR2["⏱️ HOUR 2-8: Parallel Generation"]
+        direction TB
+        subgraph SOCIAL["Social Media (5 forks)"]
+            S1[Twitter/X]
+            S2[LinkedIn]
+            S3[Instagram]
+            S4[TikTok]
+            S5[YouTube]
+        end
+        subgraph EMAIL["Email (5 forks)"]
+            E1[Customer]
+            E2[Partner]
+            E3[Press]
+            E4[Newsletter]
+            E5[Internal]
+        end
+        subgraph WEB["Web (5 forks)"]
+            W1[Blog Posts]
+            W2[Landing Pages]
+            W3[Documentation]
+            W4[Help Articles]
+            W5[Tutorials]
+        end
+        subgraph REGIONAL["Regional (5 forks)"]
+            R1[EN-US]
+            R2[DE-DE]
+            R3[FR-FR]
+            R4[JA-JP]
+            R5[ZH-CN]
+        end
+    end
+
+    subgraph HOUR8["⏱️ HOUR 8-24: Review & Publish"]
+        REV[Brand Compliance<br/>Review]
+        PUB[Multi-Channel<br/>Publishing]
+    end
+
+    subgraph HOUR48["⏱️ HOUR 24-48: Amplification"]
+        AMP1[Paid Media<br/>Activation]
+        AMP2[Influencer<br/>Outreach]
+        AMP3[Community<br/>Engagement]
+    end
+
+    KEYNOTE --> HOUR0
+    F1 --> SOCIAL
+    F2 --> EMAIL
+    F3 --> WEB
+    F4 --> REGIONAL
+    SOCIAL & EMAIL & WEB & REGIONAL --> REV
+    REV --> PUB
+    PUB --> HOUR48
+
+    style KEYNOTE fill:#FA0F00,color:#fff
+    style O1 fill:#FF6B00,color:#fff
+    style REV fill:#31A8FF,color:#fff
+    style PUB fill:#00C853,color:#fff
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram2">
+                    <div class="diagram-info">
+                        <span class="badge">Flowchart</span>
+                        <h3>Brand Asset Factory Production Pipeline</h3>
+                        <p>End-to-end asset generation pipeline from request intake through brand token application, parallel generation with Firefly MCP + Bencium skills, validation checks, and DAM distribution.</p>
+                    </div>
+                    <div class="mermaid">
+flowchart LR
+    subgraph INPUT["📥 INPUT"]
+        REQ[Asset Request]
+        REQ --> |product| PROD
+        REQ --> |campaign| CAMP
+        REQ --> |type| TYPE
+
+        PROD[Product<br/>Photoshop, Illustrator,<br/>Premiere, Firefly...]
+        CAMP[Campaign<br/>AI Revolution,<br/>Creator Economy...]
+        TYPE[Asset Type<br/>Social, Email,<br/>Web, Print...]
+    end
+
+    subgraph FACTORY["🏭 BRAND ASSET FACTORY"]
+        direction TB
+
+        subgraph TOKENS["Brand Tokens"]
+            T1["Colors<br/>#FA0F00"]
+            T2["Typography<br/>Adobe Clean"]
+            T3["Voice<br/>Innovative, Engaging"]
+        end
+
+        subgraph GENERATION["Parallel Generation"]
+            G1[Fork 1<br/>Twitter]
+            G2[Fork 2<br/>LinkedIn]
+            G3[Fork 3<br/>Instagram]
+            G4[Fork 4<br/>Email]
+            G5[Fork 5<br/>Web]
+            G6[Fork 6<br/>Print]
+        end
+
+        subgraph TOOLS["AI Tools"]
+            FIREFLY["🔥 Firefly MCP<br/>generate_image<br/>remove_background<br/>style_transfer"]
+            BENCIUM["🎨 Bencium Skills<br/>controlled: production<br/>innovative: creative"]
+        end
+    end
+
+    subgraph VALIDATION["✅ VALIDATION"]
+        V1[Color Check]
+        V2[Typography Check]
+        V3[Logo Placement]
+        V4[Accessibility<br/>WCAG 2.1 AA]
+        V5[Resolution]
+    end
+
+    subgraph OUTPUT["📤 OUTPUT"]
+        DAM[Adobe DAM<br/>Experience Manager]
+        CDN[CDN<br/>Distribution]
+        ANALYTICS[Adobe Analytics<br/>Performance]
+    end
+
+    INPUT --> FACTORY
+    TOKENS --> GENERATION
+    TOOLS --> GENERATION
+    GENERATION --> VALIDATION
+    VALIDATION --> OUTPUT
+
+    style FIREFLY fill:#FF6B00,color:#fff
+    style BENCIUM fill:#9999FF,color:#fff
+    style DAM fill:#FA0F00,color:#fff
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram3">
+                    <div class="diagram-info">
+                        <span class="badge">Pie Chart</span>
+                        <h3>Annual Asset Production Scale</h3>
+                        <p>Breakdown of 8,640 assets per year across 8 Adobe products. Calculation: 8 products × 12 campaigns × 6 asset types × 15 regions = 8,640 unique assets annually.</p>
+                    </div>
+                    <div class="mermaid">
+pie showData
+    title "8,640 Assets/Year Breakdown"
+    "Photoshop" : 1080
+    "Illustrator" : 1080
+    "Premiere Pro" : 1080
+    "After Effects" : 1080
+    "Lightroom" : 1080
+    "Firefly" : 1080
+    "Express" : 1080
+    "Acrobat" : 1080
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram4">
+                    <div class="diagram-info">
+                        <span class="badge">Flowchart</span>
+                        <h3>Customer Segment Content Engine</h3>
+                        <p>Personalization architecture showing how content is adapted for 5 customer segments (Creative Pro, Marketing, Enterprise, SMB, Education) with tailored voice, Firefly imagery, and delivery channels.</p>
+                    </div>
+                    <div class="mermaid">
+flowchart TB
+    subgraph SEGMENTS["👥 CUSTOMER SEGMENTS"]
+        direction LR
+        SEG1["🎨 Creative<br/>Professional"]
+        SEG2["📊 Marketing<br/>Team"]
+        SEG3["🏢 Enterprise"]
+        SEG4["🏪 SMB"]
+        SEG5["🎓 Education"]
+    end
+
+    subgraph PERSONALIZATION["🎯 PERSONALIZATION LAYER"]
+        direction TB
+
+        subgraph VOICE["Voice Adaptation"]
+            V1["Peer-to-Peer<br/>(Creative Pro)"]
+            V2["Strategic Partner<br/>(Enterprise)"]
+            V3["Helpful Friend<br/>(SMB)"]
+        end
+
+        subgraph IMAGERY["Firefly Imagery"]
+            I1["Studio Setting<br/>(Creative Pro)"]
+            I2["Boardroom<br/>(Enterprise)"]
+            I3["Home Office<br/>(SMB)"]
+        end
+
+        subgraph CONTENT["Content Types"]
+            C1["Tutorials<br/>Inspiration"]
+            C2["Case Studies<br/>ROI Tools"]
+            C3["Quick Tips<br/>Templates"]
+        end
+    end
+
+    subgraph GENERATION["⚡ PARALLEL GENERATION"]
+        F1[Fork 1-4<br/>Creative Pro]
+        F2[Fork 5-8<br/>Marketing]
+        F3[Fork 9-12<br/>Enterprise]
+        F4[Fork 13-16<br/>SMB]
+        F5[Fork 17-20<br/>Education]
+    end
+
+    subgraph DELIVERY["📬 PERSONALIZED DELIVERY"]
+        D1[Email<br/>Journeys]
+        D2[Web<br/>Experience]
+        D3[Sales<br/>Enablement]
+        D4[Community<br/>Content]
+    end
+
+    SEGMENTS --> PERSONALIZATION
+    PERSONALIZATION --> GENERATION
+    GENERATION --> DELIVERY
+
+    style SEG1 fill:#31A8FF,color:#fff
+    style SEG2 fill:#FF9A00,color:#fff
+    style SEG3 fill:#FA0F00,color:#fff
+    style SEG4 fill:#FF0099,color:#fff
+    style SEG5 fill:#00C853,color:#fff
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram5">
+                    <div class="diagram-info">
+                        <span class="badge">Gantt Chart</span>
+                        <h3>Regional Localization: Sequential vs. Parallel</h3>
+                        <p>Comparison of traditional sequential translation (19 days) vs. E2B parallel forks (6 days). Demonstrates 68% reduction in time-to-market for multi-region content deployment.</p>
+                    </div>
+                    <div class="mermaid">
+gantt
+    title Regional Content Localization
+    dateFormat  YYYY-MM-DD
+    axisFormat %d
+
+    section Traditional (Sequential)
+    EN-US Master Content    :t1, 2025-01-01, 5d
+    DE-DE Translation       :t2, after t1, 3d
+    FR-FR Translation       :t3, after t2, 3d
+    JA-JP Translation       :t4, after t3, 4d
+    ZH-CN Translation       :t5, after t4, 4d
+    Total: 19 days          :milestone, after t5, 0d
+
+    section E2B Parallel Forks
+    EN-US Master Content    :p1, 2025-01-01, 5d
+    DE-DE Fork              :p2, after p1, 1d
+    FR-FR Fork              :p3, after p1, 1d
+    JA-JP Fork              :p4, after p1, 1d
+    ZH-CN Fork              :p5, after p1, 1d
+    Total: 6 days           :milestone, after p5, 0d
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram6">
+                    <div class="diagram-info">
+                        <span class="badge">Flowchart</span>
+                        <h3>E2B Sandbox Fork Architecture</h3>
+                        <p>Technical architecture showing how the main Claude Code session spawns N isolated E2B sandbox forks, each with its own Claude agent, Firefly MCP, Git clone, and Node.js runtime for parallel execution.</p>
+                    </div>
+                    <div class="mermaid">
+flowchart TB
+    subgraph ORCHESTRATOR["🎯 ORCHESTRATOR"]
+        MAIN[Main Claude Code<br/>Session]
+    end
+
+    subgraph E2B["☁️ E2B CLOUD"]
+        direction TB
+
+        subgraph FORK1["Sandbox Fork 1"]
+            F1A[Claude Agent]
+            F1B[Firefly MCP]
+            F1C[Git Clone]
+            F1D[Node.js Runtime]
+        end
+
+        subgraph FORK2["Sandbox Fork 2"]
+            F2A[Claude Agent]
+            F2B[Firefly MCP]
+            F2C[Git Clone]
+            F2D[Node.js Runtime]
+        end
+
+        subgraph FORK3["Sandbox Fork 3"]
+            F3A[Claude Agent]
+            F3B[Firefly MCP]
+            F3C[Git Clone]
+            F3D[Node.js Runtime]
+        end
+
+        subgraph FORKN["Sandbox Fork N..."]
+            FNA[Claude Agent]
+            FNB[Firefly MCP]
+            FNC[Git Clone]
+            FND[Node.js Runtime]
+        end
+    end
+
+    subgraph ISOLATION["🔒 ISOLATION BENEFITS"]
+        ISO1[No Cross-Contamination]
+        ISO2[Independent Dependencies]
+        ISO3[Parallel Execution]
+        ISO4[Safe Experimentation]
+    end
+
+    subgraph RESULTS["📊 AGGREGATED RESULTS"]
+        RES1[Design Variations]
+        RES2[Generated Assets]
+        RES3[Cost Tracking]
+        RES4[Performance Metrics]
+    end
+
+    MAIN --> |spawn N forks| E2B
+    E2B --> |complete| RESULTS
+    E2B -.-> ISOLATION
+
+    style MAIN fill:#FF6B00,color:#fff
+    style FORK1 fill:#31A8FF,color:#fff
+    style FORK2 fill:#31A8FF,color:#fff
+    style FORK3 fill:#31A8FF,color:#fff
+    style FORKN fill:#31A8FF,color:#fff
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram7">
+                    <div class="diagram-info">
+                        <span class="badge">Flowchart</span>
+                        <h3>MAX 2025 Announcement Content Matrix</h3>
+                        <p>Content permutation matrix: 4 announcements × 6 channels × 5 segments × 3 regions = 360 unique content variations generated from a single keynote event.</p>
+                    </div>
+                    <div class="mermaid">
+flowchart LR
+    subgraph ANNOUNCEMENTS["📢 MAX 2025 ANNOUNCEMENTS"]
+        A1["Firefly<br/>Image Model 5"]
+        A2["AI Assistant<br/>in Photoshop"]
+        A3["Creative<br/>Production"]
+        A4["Partner<br/>Models"]
+    end
+
+    subgraph CHANNELS["📱 CHANNELS"]
+        CH1[Twitter/X]
+        CH2[LinkedIn]
+        CH3[Instagram]
+        CH4[Email]
+        CH5[Blog]
+        CH6[Landing Page]
+    end
+
+    subgraph SEGMENTS["👥 SEGMENTS"]
+        S1[Creative Pro]
+        S2[Marketing]
+        S3[Enterprise]
+        S4[SMB]
+        S5[Education]
+    end
+
+    subgraph REGIONS["🌍 REGIONS"]
+        R1[Americas]
+        R2[EMEA]
+        R3[APAC]
+    end
+
+    ANNOUNCEMENTS --> CHANNELS
+    CHANNELS --> SEGMENTS
+    SEGMENTS --> REGIONS
+
+    style A1 fill:#FF6B00,color:#fff
+    style A2 fill:#31A8FF,color:#fff
+    style A3 fill:#9999FF,color:#fff
+    style A4 fill:#00C853,color:#fff
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram8">
+                    <div class="diagram-info">
+                        <span class="badge">XY Chart</span>
+                        <h3>ROI Comparison: Traditional vs. Agentic</h3>
+                        <p>Key metrics comparison: 20x more assets/day, 10x faster time-to-market, 100x cost reduction per asset, and 98%+ brand consistency with automated validation.</p>
+                    </div>
+                    <div class="mermaid">
+xychart-beta
+    title "Content Production: Traditional vs. E2B Agentic"
+    x-axis ["Assets/Day", "Time to Market (days)", "Cost per Asset ($)", "Brand Consistency (%)"]
+    y-axis "Value" 0 --> 100
+    bar [25, 19, 150, 75]
+    bar [500, 6, 2, 98]
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram9">
+                    <div class="diagram-info">
+                        <span class="badge">Sequence</span>
+                        <h3>Firefly + Bencium Integration Flow</h3>
+                        <p>Parallel execution sequence showing how E2B forks coordinate Bencium UX design skills with Firefly MCP image generation for social, email, and web content streams simultaneously.</p>
+                    </div>
+                    <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant Claude as Claude Code
+    participant Bencium as Bencium Skill
+    participant Firefly as Firefly MCP
+    participant E2B as E2B Sandbox
+
+    User->>Claude: Generate campaign assets
+    Claude->>E2B: Spawn parallel forks
+
+    par Fork 1: Social Media
+        E2B->>Bencium: Apply innovative-ux-designer
+        Bencium-->>E2B: Layout templates
+        E2B->>Firefly: generate_image(hero prompt)
+        Firefly-->>E2B: Hero images (4 variations)
+        E2B->>Firefly: apply_style_transfer(brand style)
+        Firefly-->>E2B: Styled assets
+    and Fork 2: Email
+        E2B->>Bencium: Apply controlled-ux-designer
+        Bencium-->>E2B: Email templates
+        E2B->>Firefly: generate_image(email header)
+        Firefly-->>E2B: Email imagery
+    and Fork 3: Web
+        E2B->>Bencium: Apply innovative-ux-designer
+        Bencium-->>E2B: Landing page design
+        E2B->>Firefly: expand_image(responsive sizes)
+        Firefly-->>E2B: Multi-size assets
+    end
+
+    E2B-->>Claude: Aggregated results
+    Claude-->>User: Campaign assets ready
+                    </div>
+                </div>
+
+                <div class="diagram-wrapper" id="diagram10">
+                    <div class="diagram-info">
+                        <span class="badge">Timeline</span>
+                        <h3>Post-MAX Timeline: 48-Hour Sprint</h3>
+                        <p>Detailed timeline from keynote conclusion through global campaign launch: orchestration (0-2h), parallel generation (2-8h), first wave publishing (8-16h), regional expansion (16-24h), and amplification (24-48h).</p>
+                    </div>
+                    <div class="mermaid">
+timeline
+    title Adobe MAX 2025 → Global Campaign Launch
+
+    section Hour 0-2
+        Keynote Ends : Content orchestrator activated
+                     : 20 E2B sandboxes spawned
+                     : Brand tokens loaded
+
+    section Hour 2-8
+        Parallel Generation : Social content (5 platforms)
+                           : Email campaigns (5 types)
+                           : Web content (5 formats)
+                           : Regional seeds (5 markets)
+
+    section Hour 8-16
+        First Wave : Brand compliance review
+                   : A/B variant selection
+                   : Firefly hero refinement
+                   : EN-US content published
+
+    section Hour 16-24
+        Regional Expansion : DE-DE localization complete
+                          : FR-FR localization complete
+                          : JA-JP localization complete
+                          : ZH-CN localization complete
+
+    section Hour 24-48
+        Amplification : Paid media activated
+                     : Influencer kits distributed
+                     : Community engagement launched
+                     : Performance tracking live
+                    </div>
+                </div>
+
+                <div class="instructions">
+                    Mouse wheel to zoom | Drag to pan | Double-click to reset
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let panZoomInstances = {};
+        let currentDiagram = 'diagram1';
+
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                useMaxWidth: false,
+                diagramMarginX: 50,
+                diagramMarginY: 30
+            },
+            gantt: {
+                useMaxWidth: false
+            },
+            pie: {
+                useMaxWidth: false
+            },
+            timeline: {
+                useMaxWidth: false
+            }
+        });
+
+        async function renderDiagrams() {
+            const diagrams = document.querySelectorAll('.mermaid');
+
+            for (let i = 0; i < diagrams.length; i++) {
+                const element = diagrams[i];
+                const graphDefinition = element.textContent.trim();
+                const id = `mermaid-svg-${i}`;
+
+                try {
+                    const { svg } = await mermaid.render(id, graphDefinition);
+                    element.innerHTML = svg;
+
+                    // Get the SVG and set proper attributes for full-size rendering
+                    const svgElement = element.querySelector('svg');
+                    if (svgElement) {
+                        // Store original viewBox
+                        const viewBox = svgElement.getAttribute('viewBox');
+                        if (viewBox) {
+                            svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                        }
+                        // Remove inline width/height to allow CSS control
+                        svgElement.style.width = '100%';
+                        svgElement.style.height = '100%';
+                    }
+                } catch (error) {
+                    console.error('Error rendering diagram:', error);
+                    element.innerHTML = `<div style="color: red; padding: 20px;">Error rendering diagram: ${error.message}</div>`;
+                }
+            }
+
+            // Initialize pan-zoom for the first diagram
+            setTimeout(() => {
+                initPanZoom('diagram1');
+            }, 100);
+        }
+
+        document.querySelectorAll('.diagram-list button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const diagramId = btn.dataset.diagram;
+                switchDiagram(diagramId);
+
+                document.querySelectorAll('.diagram-list button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        function switchDiagram(diagramId) {
+            document.querySelectorAll('.diagram-wrapper').forEach(wrapper => {
+                wrapper.classList.remove('active');
+            });
+            document.getElementById(diagramId).classList.add('active');
+            currentDiagram = diagramId;
+
+            setTimeout(() => {
+                initPanZoom(diagramId);
+                updateZoomLevel();
+            }, 50);
+        }
+
+        function initPanZoom(diagramId) {
+            const wrapper = document.getElementById(diagramId);
+            const svg = wrapper.querySelector('svg');
+
+            if (!svg) return;
+
+            // Destroy existing instance
+            if (panZoomInstances[diagramId]) {
+                panZoomInstances[diagramId].destroy();
+            }
+
+            // Get container dimensions
+            const container = wrapper.querySelector('.mermaid');
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+
+            // Set SVG to container size for proper pan-zoom
+            svg.setAttribute('width', containerWidth);
+            svg.setAttribute('height', containerHeight);
+
+            panZoomInstances[diagramId] = svgPanZoom(svg, {
+                zoomEnabled: true,
+                controlIconsEnabled: false,
+                fit: true,
+                center: true,
+                minZoom: 0.1,
+                maxZoom: 20,
+                zoomScaleSensitivity: 0.2,
+                onZoom: updateZoomLevel,
+                dblClickZoomEnabled: true,
+                contain: false,
+                refreshRate: 'auto'
+            });
+
+            // Fit and center initially
+            panZoomInstances[diagramId].fit();
+            panZoomInstances[diagramId].center();
+            updateZoomLevel();
+        }
+
+        function zoomIn() {
+            if (panZoomInstances[currentDiagram]) {
+                panZoomInstances[currentDiagram].zoomIn();
+            }
+        }
+
+        function zoomOut() {
+            if (panZoomInstances[currentDiagram]) {
+                panZoomInstances[currentDiagram].zoomOut();
+            }
+        }
+
+        function resetZoom() {
+            if (panZoomInstances[currentDiagram]) {
+                panZoomInstances[currentDiagram].resetZoom();
+                panZoomInstances[currentDiagram].center();
+                updateZoomLevel();
+            }
+        }
+
+        function fitToScreen() {
+            if (panZoomInstances[currentDiagram]) {
+                panZoomInstances[currentDiagram].fit();
+                panZoomInstances[currentDiagram].center();
+                updateZoomLevel();
+            }
+        }
+
+        function updateZoomLevel() {
+            if (panZoomInstances[currentDiagram]) {
+                const zoom = panZoomInstances[currentDiagram].getZoom();
+                document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            }
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (panZoomInstances[currentDiagram]) {
+                setTimeout(() => {
+                    initPanZoom(currentDiagram);
+                }, 100);
+            }
+        });
+
+        // Render all diagrams on load
+        renderDiagrams();
+    </script>
+</body>
+</html>
