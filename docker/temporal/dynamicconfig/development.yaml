@@ -1,0 +1,47 @@
+# Temporal Dynamic Configuration for Development
+#
+# This file configures Temporal server behavior.
+# For production, adjust these values based on your workload.
+
+# Frontend service settings
+frontend.enableClientVersionCheck:
+  - value: true
+    constraints: {}
+
+# History service settings
+history.persistenceMaxQPS:
+  - value: 3000
+    constraints: {}
+
+# Matching service settings
+matching.numTaskqueueReadPartitions:
+  - value: 5
+    constraints: {}
+matching.numTaskqueueWritePartitions:
+  - value: 5
+    constraints: {}
+
+# Worker settings
+worker.enableScheduler:
+  - value: true
+    constraints: {}
+
+# System settings for sandbox orchestration
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
+    constraints: {}
+
+# Workflow execution limits (generous for long-running sandbox workflows)
+limit.maxIDLength:
+  - value: 1000
+    constraints: {}
+
+# History limits
+history.maximumSignalsPerExecution:
+  - value: 10000
+    constraints: {}
+
+# Retention (7 days for development)
+system.archivalRetentionInDays:
+  - value: 7
+    constraints: {}

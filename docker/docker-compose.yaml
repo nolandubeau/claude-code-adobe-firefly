@@ -1,0 +1,156 @@
+# Docker Compose for Sandbox Orchestration Infrastructure
+#
+# Services:
+# - Temporal Server (workflow orchestration)
+# - Temporal UI (workflow visualization)
+# - PostgreSQL (Temporal persistence)
+# - Prometheus (metrics collection)
+# - Grafana (dashboards)
+#
+# Usage:
+#   docker-compose up -d                    # Start all services
+#   docker-compose up -d temporal temporal-ui   # Start Temporal only
+#   docker-compose logs -f temporal         # View Temporal logs
+#   docker-compose down                     # Stop all services
+
+version: "3.8"
+
+services:
+  # ============================================
+  # Temporal Server
+  # ============================================
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: temporal
+    ports:
+      - "7233:7233"  # gRPC port
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgresql
+      - DYNAMIC_CONFIG_FILE_PATH=/etc/temporal/config/dynamicconfig/development.yaml
+    volumes:
+      - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - sandbox-network
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ============================================
+  # Temporal Web UI
+  # ============================================
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    container_name: temporal-ui
+    ports:
+      - "8080:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      - temporal
+    networks:
+      - sandbox-network
+
+  # ============================================
+  # PostgreSQL (Temporal persistence)
+  # ============================================
+  postgresql:
+    image: postgres:15-alpine
+    container_name: temporal-postgresql
+    environment:
+      - POSTGRES_USER=temporal
+      - POSTGRES_PASSWORD=temporal
+    volumes:
+      - temporal-db:/var/lib/postgresql/data
+    networks:
+      - sandbox-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Prometheus (Metrics)
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - sandbox-network
+
+  # ============================================
+  # Grafana (Dashboards)
+  # ============================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - sandbox-network
+
+  # ============================================
+  # Sandbox Worker (optional - can run locally)
+  # ============================================
+  sandbox-worker:
+    build:
+      context: ../apps/sandbox_temporal
+      dockerfile: Dockerfile
+    container_name: sandbox-worker
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE=sandbox-orchestration
+      - E2B_API_KEY=${E2B_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - METRICS_PORT=9091
+    ports:
+      - "9091:9091"  # Worker metrics
+    depends_on:
+      temporal:
+        condition: service_healthy
+    networks:
+      - sandbox-network
+    profiles:
+      - worker  # Only start with: docker-compose --profile worker up
+
+networks:
+  sandbox-network:
+    driver: bridge
+
+volumes:
+  temporal-db:
+  prometheus-data:
+  grafana-data:

@@ -30,11 +30,18 @@ claude-code-adobe-firefly/
 │   ├── firefly_sdk/            # Python SDK with Typer CLI + mock testing
 │   ├── firefly_examples/       # Standalone UV scripts
 │   ├── sandbox_workflows/      # obox: Parallel agent forks
+│   ├── sandbox_temporal/       # Temporal.io durable orchestration (Python)
+│   ├── sandbox_motia/          # Motia.dev event-driven orchestration (TypeScript)
 │   ├── sandbox_mcp/            # MCP server for sandboxes
 │   ├── sandbox_cli/            # CLI for E2B management
 │   ├── sandbox_fundamentals/   # E2B learning examples
 │   ├── cc_in_sandbox/          # Claude Code in sandbox (ibox)
 │   └── sandbox_agent_working_dir/
+├── docker/                     # Docker infrastructure
+│   ├── docker-compose.yaml     # Temporal + Prometheus + Grafana
+│   ├── temporal/               # Temporal configuration
+│   ├── prometheus/             # Prometheus configuration
+│   └── grafana/                # Grafana dashboards
 ├── docs/                       # Documentation and examples
 │   ├── README.md               # Skills documentation
 │   ├── prompts.md
@@ -87,6 +94,8 @@ Isolated, scalable sandbox environments for parallel agent experiments.
 | App | Description |
 |-----|-------------|
 | `sandbox_workflows/` | **obox**: Parallel agent forks in isolated sandboxes |
+| `sandbox_temporal/` | **Durable orchestration**: Temporal.io workflows for production scale |
+| `sandbox_motia/` | **Event-driven**: Motia.dev steps for unified backend |
 | `sandbox_mcp/` | MCP server for LLM sandbox integration |
 | `sandbox_cli/` | Click CLI for E2B management |
 | `sandbox_fundamentals/` | E2B SDK learning examples |
@@ -107,6 +116,51 @@ uv run python src/main.py exec <sandbox-id> "ls -la"
 # Run parallel experiments (obox)
 uv run obox <repo-url> --branch <branch> --model opus --prompt "task" --forks 3
 ```
+
+### Durable Sandbox Orchestration (Temporal)
+
+Production-grade orchestration with [Temporal.io](https://temporal.io/):
+
+```bash
+# Start infrastructure
+cd docker && docker-compose up -d
+
+# Start worker
+cd apps/sandbox_temporal && uv run sandbox-worker
+
+# Launch durable forks
+uv run sandbox-temporal fork https://github.com/user/repo \
+  --prompt "Implement feature X" \
+  --forks 5 \
+  --max-concurrent 3 \
+  --budget 10.0
+
+# Monitor progress
+uv run sandbox-temporal status <workflow-id>
+```
+
+Features:
+- **Automatic checkpoint/resume** - Survives crashes
+- **Retry with exponential backoff** - Handles transient failures
+- **Rate limiting** - Configurable concurrent forks
+- **Budget enforcement** - Stop at cost limit
+- **Full observability** - Temporal UI + Prometheus + Grafana
+
+### Event-Driven Orchestration (Motia)
+
+Unified backend with [Motia.dev](https://www.motia.dev/):
+
+```bash
+cd apps/sandbox_motia
+npm install
+npm run dev
+```
+
+Features:
+- **Step primitive** - Single abstraction for all operations
+- **Event-driven** - Automatic retry via event system
+- **Shared state** - Key-value store across steps
+- **Traces UI** - Full execution visualization
 
 ---
 

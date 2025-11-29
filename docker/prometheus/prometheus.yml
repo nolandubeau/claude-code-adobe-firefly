@@ -1,0 +1,47 @@
+# Prometheus Configuration for Sandbox Orchestration
+#
+# Scrapes metrics from:
+# - Temporal Server
+# - Sandbox Workers
+# - Custom application metrics
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alerting configuration (optional)
+alerting:
+  alertmanagers: []
+
+# Rule files (optional)
+rule_files: []
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Temporal Server metrics
+  - job_name: 'temporal'
+    static_configs:
+      - targets: ['temporal:7233']
+    metrics_path: /metrics
+
+  # Sandbox Worker metrics (when running in Docker)
+  - job_name: 'sandbox-worker-docker'
+    static_configs:
+      - targets: ['sandbox-worker:9091']
+
+  # Sandbox Worker metrics (when running locally)
+  - job_name: 'sandbox-worker-local'
+    static_configs:
+      - targets: ['host.docker.internal:9090']
+    # Only scrape if available
+    scrape_timeout: 5s
+
+  # Additional workers can be added here
+  # - job_name: 'sandbox-worker-2'
+  #   static_configs:
+  #     - targets: ['worker-2:9091']

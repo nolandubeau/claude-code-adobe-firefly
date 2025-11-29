@@ -1,0 +1,14 @@
+# Grafana Dashboard Provisioning Configuration
+
+apiVersion: 1
+
+providers:
+  - name: 'Sandbox Orchestration'
+    orgId: 1
+    folder: 'Sandbox'
+    folderUid: 'sandbox'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
